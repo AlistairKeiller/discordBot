@@ -7,7 +7,6 @@ use serenity::builder::*;
 use serenity::model::channel::Message;
 use serenity::model::gateway::Ready;
 use serenity::model::prelude::*;
-use serenity::model::webhook::Webhook;
 use serenity::prelude::*;
 
 struct Handler;
@@ -16,8 +15,8 @@ struct Handler;
 impl EventHandler for Handler {
     async fn message(&self, ctx: Context, msg: Message) {
         if msg.content.starts_with("!") {
-            let mut font_system = FontSystem::new_with_fonts([Source::File(
-                std::path::PathBuf::new().with_file_name("src/Monospace.ttf"),
+            let mut font_system = FontSystem::new_with_fonts([Source::Binary(
+                std::sync::Arc::new(include_bytes!("Monocraft.ttf")),
             )]);
             let mut swash_cache = SwashCache::new();
 
@@ -47,7 +46,8 @@ impl EventHandler for Handler {
                 }
             });
 
-            let mut image = ImageBuffer::<Rgba<u8>, Vec<u8>>::new(max_x as u32, max_y as u32 + 7);
+            let mut image =
+                ImageBuffer::<Rgba<u8>, Vec<u8>>::new(max_x as u32 + 2, max_y as u32 + 8);
 
             buffer.draw(&mut swash_cache, text_color, |x, y, w, h, color| {
                 let color = Rgba([color.r(), color.g(), color.b(), color.a()]);
