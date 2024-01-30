@@ -57,22 +57,11 @@ impl EventHandler for Handler {
             if let Ok(_) = image.write_to(&mut cursor, image::ImageOutputFormat::Png) {
                 let data = cursor.into_inner();
 
-                // Create an attachment from the byte stream
                 let attachment = CreateAttachment::bytes(data, "image.png");
-
-                // Send the message with the image
-                // if let Err(why) = msg
-                //     .channel_id
-                //     .send_message(&ctx.http, CreateMessage::new().add_file(attachment))
-                //     .await
-                // {
-                //     println!("Error sending message: {why:?}");
-                // }
 
                 let mut webhook = None;
                 if let Ok(webhooks) = msg.channel_id.webhooks(&ctx.http).await {
                     if let Some(first_webhook) = webhooks.first() {
-                        println!("{}", webhooks.len());
                         webhook = Some(first_webhook.clone());
                     } else if let Ok(new_webhook) = msg
                         .channel_id
@@ -91,13 +80,14 @@ impl EventHandler for Handler {
                     }
                     if let Some(nick) = msg.author_nick(&ctx.http).await {
                         builder = builder.username(nick);
-                    } else if let Some(nick) = msg.author.global_name {
+                    } else if let Some(nick) = msg.author.global_name.clone() {
                         builder = builder.username(nick);
                     }
                     webhook
                         .execute(&ctx.http, false, builder)
                         .await
                         .expect("Could not execute webhook.");
+                    if let Ok(err) = msg.delete(&ctx.http).await {};
                 }
             }
         }
