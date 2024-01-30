@@ -10,9 +10,7 @@ struct Handler;
 #[async_trait]
 impl EventHandler for Handler {
     async fn message(&self, ctx: Context, msg: Message) {
-        print!("test");
         if msg.content == "!ping" {
-            print!("test");
             if let Ok(image) = CreateAttachment::path("image.png").await {
                 if let Err(why) = msg
                     .channel_id
