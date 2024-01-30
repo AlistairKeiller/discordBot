@@ -1,6 +1,8 @@
 use serenity::async_trait;
+use serenity::builder::*;
 use serenity::model::channel::Message;
 use serenity::model::gateway::Ready;
+use serenity::model::prelude::*;
 use serenity::prelude::*;
 
 struct Handler;
@@ -8,9 +10,17 @@ struct Handler;
 #[async_trait]
 impl EventHandler for Handler {
     async fn message(&self, ctx: Context, msg: Message) {
+        print!("test");
         if msg.content == "!ping" {
-            if let Err(why) = msg.channel_id.say(&ctx.http, "Pong!").await {
-                println!("Error sending message: {why:?}");
+            print!("test");
+            if let Ok(image) = CreateAttachment::path("image.png").await {
+                if let Err(why) = msg
+                    .channel_id
+                    .send_message(&ctx.http, CreateMessage::new().add_file(image))
+                    .await
+                {
+                    println!("Error sending message: {why:?}");
+                }
             }
         }
     }
