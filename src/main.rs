@@ -73,7 +73,7 @@ impl EventHandler for Handler {
                         webhook = Some(first_webhook.clone());
                     } else if let Ok(new_webhook) = msg
                         .channel_id
-                        .create_webhook(&ctx.http, CreateWebhook::new("test"))
+                        .create_webhook(&ctx.http, CreateWebhook::new("render_webhook"))
                         .await
                     {
                         println!("new");
@@ -95,7 +95,7 @@ impl EventHandler for Handler {
                         .execute(&ctx.http, false, builder)
                         .await
                         .expect("Could not execute webhook.");
-                    if let Ok(err) = msg.delete(&ctx.http).await {};
+                    if let Ok(_) = msg.delete(&ctx.http).await {};
                 }
             }
         }
@@ -108,7 +108,7 @@ impl EventHandler for Handler {
 
 #[tokio::main]
 async fn main() {
-    let token = "MTIwMTczOTU1NTAyODYxNTE4OA.GD8buA.aT1Gs2S6CZABC-PfIWKbZPiD6uvfcAkc3YX68E";
+    let token = std::env::var("DISCORD_TOKEN").expect("Expected a token in the environment");
     let intents = GatewayIntents::GUILD_MESSAGES
         | GatewayIntents::DIRECT_MESSAGES
         | GatewayIntents::MESSAGE_CONTENT;

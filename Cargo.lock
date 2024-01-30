@@ -397,7 +397,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "discordBotRust"
+name = "discord_render"
 version = "0.1.0"
 dependencies = [
  "cosmic-text",
