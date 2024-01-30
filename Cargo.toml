@@ -7,8 +7,7 @@ edition = "2021"
 
 [dependencies]
 serenity = "0.12"
-text-to-png = "0.2.0"
-tokio = { version = "1.21.2", features = ["macros", "rt-multi-thread"] }
+tokio = { version = "1", features = ["full"] }
 cosmic-text = { git = "https://github.com/pop-os/cosmic-text.git" }
 image = "0.24.8"
 
