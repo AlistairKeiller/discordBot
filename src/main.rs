@@ -2,9 +2,11 @@ use cosmic_text::{Attrs, Buffer, Color, FontSystem, Metrics, Shaping, SwashCache
 use image::{ImageBuffer, Rgba};
 use serenity::async_trait;
 use serenity::builder::*;
+use serenity::http::Http;
 use serenity::model::channel::Message;
 use serenity::model::gateway::Ready;
 use serenity::model::prelude::*;
+use serenity::model::webhook::Webhook;
 use serenity::prelude::*;
 
 struct Handler;
@@ -64,13 +66,31 @@ impl EventHandler for Handler {
                 let attachment = CreateAttachment::bytes(data, "image.png");
 
                 // Send the message with the image
-                if let Err(why) = msg
-                    .channel_id
-                    .send_message(&ctx.http, CreateMessage::new().add_file(attachment))
-                    .await
-                {
-                    println!("Error sending message: {why:?}");
+                // if let Err(why) = msg
+                //     .channel_id
+                //     .send_message(&ctx.http, CreateMessage::new().add_file(attachment))
+                //     .await
+                // {
+                //     println!("Error sending message: {why:?}");
+                // }
+
+                let webhook = Webhook::from_url(&ctx.http, "https://discord.com/api/webhooks/1201806780682997790/5oiQ9Zyrm2StAW9HrgmqzVf-PjDSJwilH1Jo8oDt6u7xWyk1Rj6MgAENB84lFGKs76ik")
+        .await
+        .expect("Replace the webhook with your own");
+
+                let mut builder = ExecuteWebhook::new().add_file(attachment);
+                if let Some(avatar_url) = msg.author.avatar_url() {
+                    builder = builder.avatar_url(avatar_url);
                 }
+                if let Some(nick) = msg.author_nick(&ctx.http).await {
+                    builder = builder.username(nick);
+                } else if let Some(nick) = msg.author.global_name {
+                    builder = builder.username(nick)
+                }
+                webhook
+                    .execute(&ctx.http, false, builder)
+                    .await
+                    .expect("Could not execute webhook.");
             }
         }
     }
