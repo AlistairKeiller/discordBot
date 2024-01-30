@@ -14,13 +14,27 @@ struct Handler;
 #[async_trait]
 impl EventHandler for Handler {
     async fn message(&self, ctx: Context, msg: Message) {
-        if msg.content.starts_with('!') {
-            let mut font_system = FontSystem::new_with_fonts([Source::Binary(
-                std::sync::Arc::new(include_bytes!("Monocraft.ttf")),
-            )]);
+        if msg.content.starts_with('!') || msg.content.starts_with('~') {
+            let mut font_system = FontSystem::new_with_fonts([
+                Source::Binary(std::sync::Arc::new(include_bytes!("Monocraft.ttf"))),
+                Source::Binary(std::sync::Arc::new(include_bytes!(
+                    "TheDoctor-FreeVersion.ttf"
+                ))),
+            ]);
             let mut swash_cache = SwashCache::new();
 
-            let metrics = Metrics::new(24.0, 30.0);
+            let metrics = Metrics::new(
+                if msg.content.starts_with('!') {
+                    32.0
+                } else {
+                    64.0
+                },
+                if msg.content.starts_with('!') {
+                    36.0
+                } else {
+                    72.0
+                },
+            );
 
             let mut buffer = Buffer::new(&mut font_system, metrics);
             let mut buffer = buffer.borrow_with(&mut font_system);
@@ -28,35 +42,42 @@ impl EventHandler for Handler {
             buffer.set_size(800.0, f32::INFINITY);
             buffer.set_text(
                 &msg.content[1..],
-                Attrs::new().family(Family::Name("Monocraft")),
+                if msg.content.starts_with('!') {
+                    Attrs::new().family(Family::Name("Monocraft"))
+                } else {
+                    Attrs::new().family(Family::Name("The Doctor"))
+                },
                 Shaping::Advanced,
             );
             buffer.shape_until_scroll(true);
 
             let text_color = Color::rgb(0xFF, 0xFF, 0xFF);
 
-            let mut max_x = 0;
-            let mut max_y = 0;
+            let mut min_x = i32::MAX;
+            let mut max_x = i32::MIN;
+            let mut min_y = i32::MAX;
+            let mut max_y = i32::MIN;
             buffer.draw(&mut swash_cache, text_color, |x, y, w, h, _| {
                 for i in x..x + w as i32 {
                     for j in y..y + h as i32 {
+                        min_x = std::cmp::min(i, min_x);
                         max_x = std::cmp::max(i, max_x);
+                        min_y = std::cmp::min(j, min_y);
                         max_y = std::cmp::max(j, max_y);
                     }
                 }
             });
 
-            let mut image =
-                ImageBuffer::<Rgba<u8>, Vec<u8>>::new(max_x as u32 + 2, max_y as u32 + 8);
+            let mut image = ImageBuffer::<Rgba<u8>, Vec<u8>>::new(
+                (max_x - min_x) as u32 + 2,
+                (max_y - min_y) as u32 + 16,
+            );
 
             buffer.draw(&mut swash_cache, text_color, |x, y, w, h, color| {
                 let color = Rgba([color.r(), color.g(), color.b(), color.a()]);
                 for i in x..x + w as i32 {
                     for j in y..y + h as i32 {
-                        if i >= 0 && i < image.width() as i32 && j >= 0 && j < image.height() as i32
-                        {
-                            image.put_pixel(i as u32, j as u32, color);
-                        }
+                        image.put_pixel((i - min_x + 1) as u32, (j - min_y + 8) as u32, color);
                     }
                 }
             });
