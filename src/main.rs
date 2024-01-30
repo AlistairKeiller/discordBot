@@ -14,7 +14,7 @@ struct Handler;
 #[async_trait]
 impl EventHandler for Handler {
     async fn message(&self, ctx: Context, msg: Message) {
-        if msg.content == "!ping" {
+        if msg.content.starts_with("!") {
             let mut font_system = FontSystem::new();
             let mut swash_cache = SwashCache::new();
 
@@ -24,11 +24,7 @@ impl EventHandler for Handler {
             let mut buffer = buffer.borrow_with(&mut font_system);
 
             buffer.set_size(800.0, f32::INFINITY);
-            buffer.set_text(
-                "Hello world! This is a test",
-                Attrs::new(),
-                Shaping::Advanced,
-            );
+            buffer.set_text(&msg.content[1..], Attrs::new(), Shaping::Advanced);
             buffer.shape_until_scroll(true);
 
             let text_color = Color::rgb(0xFF, 0xFF, 0xFF); // Black color
@@ -85,7 +81,7 @@ impl EventHandler for Handler {
                 if let Some(nick) = msg.author_nick(&ctx.http).await {
                     builder = builder.username(nick);
                 } else if let Some(nick) = msg.author.global_name {
-                    builder = builder.username(nick)
+                    builder = builder.username(nick);
                 }
                 webhook
                     .execute(&ctx.http, false, builder)
