@@ -56,12 +56,17 @@ impl EventHandler for Handler {
                 }
             });
 
-            image.save("image.png").unwrap();
+            let mut cursor = std::io::Cursor::new(Vec::new());
+            if let Ok(_) = image.write_to(&mut cursor, image::ImageOutputFormat::Png) {
+                let data = cursor.into_inner();
 
-            if let Ok(image) = CreateAttachment::path("image.png").await {
+                // Create an attachment from the byte stream
+                let attachment = CreateAttachment::bytes(data, "image.png");
+
+                // Send the message with the image
                 if let Err(why) = msg
                     .channel_id
-                    .send_message(&ctx.http, CreateMessage::new().add_file(image))
+                    .send_message(&ctx.http, CreateMessage::new().add_file(attachment))
                     .await
                 {
                     println!("Error sending message: {why:?}");
