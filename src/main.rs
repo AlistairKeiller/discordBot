@@ -1,4 +1,6 @@
-use cosmic_text::{Attrs, Buffer, Color, FontSystem, Metrics, Shaping, SwashCache};
+use cosmic_text::{
+    fontdb::Source, Attrs, Buffer, Color, Family, FontSystem, Metrics, Shaping, SwashCache,
+};
 use image::{ImageBuffer, Rgba};
 use serenity::async_trait;
 use serenity::builder::*;
@@ -14,7 +16,9 @@ struct Handler;
 impl EventHandler for Handler {
     async fn message(&self, ctx: Context, msg: Message) {
         if msg.content.starts_with("!") {
-            let mut font_system = FontSystem::new();
+            let mut font_system = FontSystem::new_with_fonts([Source::File(
+                std::path::PathBuf::new().with_file_name("src/Monospace.ttf"),
+            )]);
             let mut swash_cache = SwashCache::new();
 
             let metrics = Metrics::new(24.0, 30.0);
@@ -23,7 +27,11 @@ impl EventHandler for Handler {
             let mut buffer = buffer.borrow_with(&mut font_system);
 
             buffer.set_size(800.0, f32::INFINITY);
-            buffer.set_text(&msg.content[1..], Attrs::new(), Shaping::Advanced);
+            buffer.set_text(
+                &msg.content[1..],
+                Attrs::new().family(Family::Name("Monocraft")),
+                Shaping::Advanced,
+            );
             buffer.shape_until_scroll(true);
 
             let text_color = Color::rgb(0xFF, 0xFF, 0xFF); // Black color
