@@ -33,7 +33,7 @@ impl EventHandler for Handler {
             );
             buffer.shape_until_scroll(true);
 
-            let text_color = Color::rgb(0xFF, 0xFF, 0xFF); // Black color
+            let text_color = Color::rgb(0xFF, 0xFF, 0xFF);
 
             let mut max_x = 0;
             let mut max_y = 0;
