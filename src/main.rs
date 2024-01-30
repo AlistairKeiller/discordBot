@@ -14,7 +14,7 @@ struct Handler;
 #[async_trait]
 impl EventHandler for Handler {
     async fn message(&self, ctx: Context, msg: Message) {
-        if msg.content.starts_with("!") {
+        if msg.content.starts_with('!') {
             let mut font_system = FontSystem::new_with_fonts([Source::Binary(
                 std::sync::Arc::new(include_bytes!("Monocraft.ttf")),
             )]);
@@ -62,7 +62,10 @@ impl EventHandler for Handler {
             });
 
             let mut cursor = std::io::Cursor::new(Vec::new());
-            if let Ok(_) = image.write_to(&mut cursor, image::ImageOutputFormat::Png) {
+            if image
+                .write_to(&mut cursor, image::ImageOutputFormat::Png)
+                .is_ok()
+            {
                 let data = cursor.into_inner();
 
                 let attachment = CreateAttachment::bytes(data, "image.png");
@@ -95,7 +98,9 @@ impl EventHandler for Handler {
                         .execute(&ctx.http, false, builder)
                         .await
                         .expect("Could not execute webhook.");
-                    if let Ok(_) = msg.delete(&ctx.http).await {};
+                    if let Err(why) = msg.delete(&ctx.http).await {
+                        println!("Client error: {why:?}");
+                    };
                 }
             }
         }
