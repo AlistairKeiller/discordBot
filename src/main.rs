@@ -74,10 +74,28 @@ impl EventHandler for Handler {
             );
 
             buffer.draw(&mut swash_cache, text_color, |x, y, w, h, color| {
-                let color = Rgba([color.r(), color.g(), color.b(), color.a()]);
+                let color_a = Rgba([color.r(), color.g(), color.b(), color.a()]);
                 for i in x..x + w as i32 {
                     for j in y..y + h as i32 {
-                        image.put_pixel((i - min_x + 1) as u32, (j - min_y + 8) as u32, color);
+                        let color_b =
+                            image.get_pixel((i - min_x + 1) as u32, (j - min_y + 8) as u32);
+
+                        let alpha_a = color_a[3] as f32 / 255.0;
+                        let alpha_b = color_b[3] as f32 / 255.0;
+
+                        let red = (color_a[0] as f32 * alpha_a)
+                            + (color_b[0] as f32 * alpha_b * (1.0 - alpha_a));
+                        let green = (color_a[1] as f32 * alpha_a)
+                            + (color_b[1] as f32 * alpha_b * (1.0 - alpha_a));
+                        let blue = (color_a[2] as f32 * alpha_a)
+                            + (color_b[2] as f32 * alpha_b * (1.0 - alpha_a));
+                        let alpha = 255.0 * (alpha_a + alpha_b * (1.0 - alpha_a));
+
+                        image.put_pixel(
+                            (i - min_x + 1) as u32,
+                            (j - min_y + 8) as u32,
+                            Rgba([red as u8, green as u8, blue as u8, alpha as u8]),
+                        );
                     }
                 }
             });
