@@ -17,7 +17,8 @@ impl EventHandler for Handler {
         if msg.content.starts_with('!') || msg.content.starts_with('~') {
             let mut font_system = FontSystem::new_with_fonts([
                 Source::Binary(std::sync::Arc::new(include_bytes!(
-                    "Monocraft-nerd-fonts-patched.ttf"
+                    // "Monocraft-nerd-fonts-patched.ttf"
+                    "Monocraft.ttf"
                 ))),
                 Source::Binary(std::sync::Arc::new(include_bytes!(
                     "The Doctor Regular.ttf"
