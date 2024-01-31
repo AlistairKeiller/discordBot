@@ -18,7 +18,7 @@ impl EventHandler for Handler {
             let mut font_system = FontSystem::new_with_fonts([
                 Source::Binary(std::sync::Arc::new(include_bytes!("Monocraft.ttf"))),
                 Source::Binary(std::sync::Arc::new(include_bytes!(
-                    "TheDoctor-FreeVersion.ttf"
+                    "The Doctor Regular.ttf"
                 ))),
             ]);
             let mut swash_cache = SwashCache::new();
