@@ -18,7 +18,7 @@ async fn render_text(
     line_height: f32,
     width: f32,
     color: Color,
-    font_data: Vec<Source>,
+    font_data: [Source; 2],
 ) -> Vec<u8> {
     let mut font_system = FontSystem::new_with_fonts(font_data);
     let mut swash_cache = SwashCache::new();
@@ -93,20 +93,21 @@ async fn render_text(
 impl EventHandler for Handler {
     async fn message(&self, ctx: Context, msg: Message) {
         if msg.content.starts_with('!') || msg.content.starts_with('~') {
-            let font_data = if msg.content.starts_with('!') {
-                [Source::Binary(std::sync::Arc::new(include_bytes!(
-                    "MonocraftNerdFont-Regular.ttf"
-                )))]
-            } else {
-                [Source::Binary(std::sync::Arc::new(include_bytes!(
-                    "TheDoctorNerdFont-Regular.ttf"
-                )))]
-            };
+            let font_data = [
+                if msg.content.starts_with('!') {
+                    Source::Binary(std::sync::Arc::new(include_bytes!("Monocraft.ttf")))
+                } else {
+                    Source::Binary(std::sync::Arc::new(include_bytes!(
+                        "The Doctor Regular.ttf"
+                    )))
+                },
+                Source::Binary(std::sync::Arc::new(include_bytes!("AppleColorEmoji.ttf"))),
+            ];
 
             let font_name = if msg.content.starts_with('!') {
-                "Monocraft Nerd Font"
+                "Monocraft"
             } else {
-                "TheDoctor Nerd Font"
+                "The Doctor"
             };
 
             let font_size = if msg.content.starts_with('!') {
