@@ -93,14 +93,15 @@ async fn render_text(
 impl EventHandler for Handler {
     async fn message(&self, ctx: Context, msg: Message) {
         if msg.content.starts_with('!') || msg.content.starts_with('~') {
-            let font_data = vec![
-                Source::Binary(std::sync::Arc::new(include_bytes!(
+            let font_data = if msg.content.starts_with('!') {
+                [Source::Binary(std::sync::Arc::new(include_bytes!(
                     "MonocraftNerdFont-Regular.ttf"
-                ))),
-                Source::Binary(std::sync::Arc::new(include_bytes!(
+                )))]
+            } else {
+                [Source::Binary(std::sync::Arc::new(include_bytes!(
                     "TheDoctorNerdFont-Regular.ttf"
-                ))),
-            ];
+                )))]
+            };
 
             let font_name = if msg.content.starts_with('!') {
                 "Monocraft Nerd Font"
