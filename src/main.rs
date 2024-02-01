@@ -92,33 +92,45 @@ async fn render_text(
 #[async_trait]
 impl EventHandler for Handler {
     async fn message(&self, ctx: Context, msg: Message) {
-        if msg.content.starts_with('!') || msg.content.starts_with('~') {
+        if msg.content.len() > 1
+            && (msg.content.starts_with('!')
+                || msg.content.starts_with('~')
+                || msg.content.starts_with('%'))
+        {
             let font_data = [
                 if msg.content.starts_with('!') {
                     Source::Binary(std::sync::Arc::new(include_bytes!("Monocraft.ttf")))
-                } else {
+                } else if msg.content.starts_with('~') {
                     Source::Binary(std::sync::Arc::new(include_bytes!(
                         "The Doctor Regular.ttf"
                     )))
+                } else {
+                    Source::Binary(std::sync::Arc::new(include_bytes!("ComicSansMS3.ttf")))
                 },
                 Source::Binary(std::sync::Arc::new(include_bytes!("AppleColorEmoji.ttf"))),
             ];
 
             let font_name = if msg.content.starts_with('!') {
                 "Monocraft"
-            } else {
+            } else if msg.content.starts_with('~') {
                 "The Doctor"
+            } else {
+                "Comic Sans MS"
             };
 
             let font_size = if msg.content.starts_with('!') {
                 32.0
-            } else {
+            } else if msg.content.starts_with('~') {
                 64.0
+            } else {
+                32.0
             };
             let line_height = if msg.content.starts_with('!') {
                 36.0
-            } else {
+            } else if msg.content.starts_with('~') {
                 72.0
+            } else {
+                36.0
             };
             let width = 800.0;
             let color = Color::rgb(0xFF, 0xFF, 0xFF);
@@ -147,7 +159,9 @@ impl EventHandler for Handler {
                     .await,
                     "image.png",
                 ));
-                if let Some(avatar_url) = msg.author.avatar_url() {
+                if let Ok(member) = msg.member(&ctx.http).await {
+                    builder = builder.avatar_url(member.face());
+                } else if let Some(avatar_url) = msg.author.avatar_url() {
                     builder = builder.avatar_url(avatar_url);
                 }
                 if let Some(nick) = msg.author_nick(&ctx.http).await {
