@@ -11,138 +11,155 @@ use serenity::prelude::*;
 
 struct Handler;
 
+async fn render_text(
+    text: &str,
+    font_name: &str,
+    font_size: f32,
+    line_height: f32,
+    width: f32,
+    color: Color,
+    font_data: Vec<Source>,
+) -> Vec<u8> {
+    let mut font_system = FontSystem::new_with_fonts(font_data);
+    let mut swash_cache = SwashCache::new();
+    let metrics = Metrics::new(font_size, line_height);
+    let mut buffer = Buffer::new(&mut font_system, metrics);
+    let mut buffer = buffer.borrow_with(&mut font_system);
+
+    buffer.set_size(width, f32::INFINITY);
+    buffer.set_text(
+        text,
+        Attrs::new().family(Family::Name(font_name)),
+        Shaping::Advanced,
+    );
+    buffer.shape_until_scroll(true);
+
+    let text_color = color;
+
+    let mut min_x = i32::MAX;
+    let mut max_x = i32::MIN;
+    let mut min_y = i32::MAX;
+    let mut max_y = i32::MIN;
+    buffer.draw(&mut swash_cache, text_color, |x, y, w, h, _| {
+        for i in x..x + w as i32 {
+            for j in y..y + h as i32 {
+                min_x = std::cmp::min(i, min_x);
+                max_x = std::cmp::max(i, max_x);
+                min_y = std::cmp::min(j, min_y);
+                max_y = std::cmp::max(j, max_y);
+            }
+        }
+    });
+
+    let mut image = ImageBuffer::<Rgba<u8>, Vec<u8>>::new(
+        (max_x - min_x) as u32 + 2,
+        (max_y - min_y) as u32 + 16,
+    );
+
+    buffer.draw(&mut swash_cache, text_color, |x, y, w, h, color| {
+        let color_a = Rgba([color.r(), color.g(), color.b(), color.a()]);
+        for i in x..x + w as i32 {
+            for j in y..y + h as i32 {
+                let color_b = image.get_pixel((i - min_x + 1) as u32, (j - min_y + 8) as u32);
+
+                let alpha_a = color_a[3] as f32 / 255.0;
+                let alpha_b = color_b[3] as f32 / 255.0;
+
+                let red =
+                    (color_a[0] as f32 * alpha_a) + (color_b[0] as f32 * alpha_b * (1.0 - alpha_a));
+                let green =
+                    (color_a[1] as f32 * alpha_a) + (color_b[1] as f32 * alpha_b * (1.0 - alpha_a));
+                let blue =
+                    (color_a[2] as f32 * alpha_a) + (color_b[2] as f32 * alpha_b * (1.0 - alpha_a));
+                let alpha = 255.0 * (alpha_a + alpha_b * (1.0 - alpha_a));
+
+                image.put_pixel(
+                    (i - min_x + 1) as u32,
+                    (j - min_y + 8) as u32,
+                    Rgba([red as u8, green as u8, blue as u8, alpha as u8]),
+                );
+            }
+        }
+    });
+
+    let mut cursor = std::io::Cursor::new(Vec::new());
+    if let Err(why) = image.write_to(&mut cursor, image::ImageOutputFormat::Png) {
+        println!("Client error: {why:?}");
+    };
+    cursor.into_inner()
+}
+
 #[async_trait]
 impl EventHandler for Handler {
     async fn message(&self, ctx: Context, msg: Message) {
         if msg.content.starts_with('!') || msg.content.starts_with('~') {
-            let mut font_system = FontSystem::new_with_fonts([
+            let font_data = vec![
                 Source::Binary(std::sync::Arc::new(include_bytes!(
                     "MonocraftNerdFont-Regular.ttf"
                 ))),
                 Source::Binary(std::sync::Arc::new(include_bytes!(
                     "TheDoctorNerdFont-Regular.ttf"
                 ))),
-            ]);
-            let mut swash_cache = SwashCache::new();
+            ];
 
-            let metrics = Metrics::new(
-                if msg.content.starts_with('!') {
-                    32.0
-                } else {
-                    64.0
-                },
-                if msg.content.starts_with('!') {
-                    36.0
-                } else {
-                    72.0
-                },
-            );
+            let font_name = if msg.content.starts_with('!') {
+                "Monocraft Nerd Font"
+            } else {
+                "TheDoctor Nerd Font"
+            };
 
-            let mut buffer = Buffer::new(&mut font_system, metrics);
-            let mut buffer = buffer.borrow_with(&mut font_system);
+            let font_size = if msg.content.starts_with('!') {
+                32.0
+            } else {
+                64.0
+            };
+            let line_height = if msg.content.starts_with('!') {
+                36.0
+            } else {
+                72.0
+            };
+            let width = 800.0;
+            let color = Color::rgb(0xFF, 0xFF, 0xFF);
 
-            buffer.set_size(800.0, f32::INFINITY);
-            buffer.set_text(
-                &msg.content[1..],
-                if msg.content.starts_with('!') {
-                    Attrs::new().family(Family::Name("Monocraft Nerd Font"))
-                } else {
-                    Attrs::new().family(Family::Name("TheDoctor Nerd Font"))
-                },
-                Shaping::Advanced,
-            );
-            buffer.shape_until_scroll(true);
+            let webhooks = msg.channel_id.webhooks(&ctx.http).await;
+            let webhook = match webhooks {
+                Ok(ref hooks) if !hooks.is_empty() => hooks.first().cloned(),
+                _ => msg
+                    .channel_id
+                    .create_webhook(&ctx.http, CreateWebhook::new("render_webhook"))
+                    .await
+                    .ok(),
+            };
 
-            let text_color = Color::rgb(0xFF, 0xFF, 0xFF);
-
-            let mut min_x = i32::MAX;
-            let mut max_x = i32::MIN;
-            let mut min_y = i32::MAX;
-            let mut max_y = i32::MIN;
-            buffer.draw(&mut swash_cache, text_color, |x, y, w, h, _| {
-                for i in x..x + w as i32 {
-                    for j in y..y + h as i32 {
-                        min_x = std::cmp::min(i, min_x);
-                        max_x = std::cmp::max(i, max_x);
-                        min_y = std::cmp::min(j, min_y);
-                        max_y = std::cmp::max(j, max_y);
-                    }
+            if let Some(webhook) = webhook {
+                let mut builder = ExecuteWebhook::new().add_file(CreateAttachment::bytes(
+                    render_text(
+                        &msg.content[1..],
+                        font_name,
+                        font_size,
+                        line_height,
+                        width,
+                        color,
+                        font_data,
+                    )
+                    .await,
+                    "image.png",
+                ));
+                if let Some(avatar_url) = msg.author.avatar_url() {
+                    builder = builder.avatar_url(avatar_url);
                 }
-            });
-
-            let mut image = ImageBuffer::<Rgba<u8>, Vec<u8>>::new(
-                (max_x - min_x) as u32 + 2,
-                (max_y - min_y) as u32 + 16,
-            );
-
-            buffer.draw(&mut swash_cache, text_color, |x, y, w, h, color| {
-                let color_a = Rgba([color.r(), color.g(), color.b(), color.a()]);
-                for i in x..x + w as i32 {
-                    for j in y..y + h as i32 {
-                        let color_b =
-                            image.get_pixel((i - min_x + 1) as u32, (j - min_y + 8) as u32);
-
-                        let alpha_a = color_a[3] as f32 / 255.0;
-                        let alpha_b = color_b[3] as f32 / 255.0;
-
-                        let red = (color_a[0] as f32 * alpha_a)
-                            + (color_b[0] as f32 * alpha_b * (1.0 - alpha_a));
-                        let green = (color_a[1] as f32 * alpha_a)
-                            + (color_b[1] as f32 * alpha_b * (1.0 - alpha_a));
-                        let blue = (color_a[2] as f32 * alpha_a)
-                            + (color_b[2] as f32 * alpha_b * (1.0 - alpha_a));
-                        let alpha = 255.0 * (alpha_a + alpha_b * (1.0 - alpha_a));
-
-                        image.put_pixel(
-                            (i - min_x + 1) as u32,
-                            (j - min_y + 8) as u32,
-                            Rgba([red as u8, green as u8, blue as u8, alpha as u8]),
-                        );
-                    }
+                if let Some(nick) = msg.author_nick(&ctx.http).await {
+                    builder = builder.username(nick);
+                } else if let Some(nick) = msg.author.global_name.clone() {
+                    builder = builder.username(nick);
                 }
-            });
-
-            let mut cursor = std::io::Cursor::new(Vec::new());
-            if image
-                .write_to(&mut cursor, image::ImageOutputFormat::Png)
-                .is_ok()
-            {
-                let data = cursor.into_inner();
-
-                let attachment = CreateAttachment::bytes(data, "image.png");
-
-                let mut webhook = None;
-                if let Ok(webhooks) = msg.channel_id.webhooks(&ctx.http).await {
-                    if let Some(first_webhook) = webhooks.first() {
-                        webhook = Some(first_webhook.clone());
-                    } else if let Ok(new_webhook) = msg
-                        .channel_id
-                        .create_webhook(&ctx.http, CreateWebhook::new("render_webhook"))
-                        .await
-                    {
-                        println!("new");
-                        webhook = Some(new_webhook);
-                    }
-                }
-
-                if let Some(webhook) = webhook {
-                    let mut builder = ExecuteWebhook::new().add_file(attachment);
-                    if let Some(avatar_url) = msg.author.avatar_url() {
-                        builder = builder.avatar_url(avatar_url);
-                    }
-                    if let Some(nick) = msg.author_nick(&ctx.http).await {
-                        builder = builder.username(nick);
-                    } else if let Some(nick) = msg.author.global_name.clone() {
-                        builder = builder.username(nick);
-                    }
-                    webhook
-                        .execute(&ctx.http, false, builder)
-                        .await
-                        .expect("Could not execute webhook.");
-                    if let Err(why) = msg.delete(&ctx.http).await {
-                        println!("Client error: {why:?}");
-                    };
-                }
+                webhook
+                    .execute(&ctx.http, false, builder)
+                    .await
+                    .expect("Could not execute webhook.");
+                if let Err(why) = msg.delete(&ctx.http).await {
+                    println!("Client error: {why:?}");
+                };
             }
         }
     }
