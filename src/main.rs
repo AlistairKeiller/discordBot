@@ -17,11 +17,10 @@ impl EventHandler for Handler {
         if msg.content.starts_with('!') || msg.content.starts_with('~') {
             let mut font_system = FontSystem::new_with_fonts([
                 Source::Binary(std::sync::Arc::new(include_bytes!(
-                    // "Monocraft-nerd-fonts-patched.ttf"
-                    "Monocraft.ttf"
+                    "MonocraftNerdFont-Regular.ttf"
                 ))),
                 Source::Binary(std::sync::Arc::new(include_bytes!(
-                    "The Doctor Regular.ttf"
+                    "TheDoctorNerdFont-Regular.ttf"
                 ))),
             ]);
             let mut swash_cache = SwashCache::new();
@@ -46,9 +45,9 @@ impl EventHandler for Handler {
             buffer.set_text(
                 &msg.content[1..],
                 if msg.content.starts_with('!') {
-                    Attrs::new().family(Family::Name("Monocraft"))
+                    Attrs::new().family(Family::Name("Monocraft Nerd Font"))
                 } else {
-                    Attrs::new().family(Family::Name("The Doctor"))
+                    Attrs::new().family(Family::Name("TheDoctor Nerd Font"))
                 },
                 Shaping::Advanced,
             );
