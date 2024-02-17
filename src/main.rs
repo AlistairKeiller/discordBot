@@ -94,13 +94,13 @@ impl EventHandler for Handler {
     async fn message(&self, ctx: Context, msg: Message) {
         if msg.content.len() > 1
             && (msg.content.starts_with('!')
-                || msg.content.starts_with('~')
+                || msg.content.starts_with('`')
                 || msg.content.starts_with('%'))
         {
             let font_data = [
                 if msg.content.starts_with('!') {
                     Source::Binary(std::sync::Arc::new(include_bytes!("Monocraft.ttf")))
-                } else if msg.content.starts_with('~') {
+                } else if msg.content.starts_with('`') {
                     Source::Binary(std::sync::Arc::new(include_bytes!(
                         "The Doctor Regular.ttf"
                     )))
@@ -112,7 +112,7 @@ impl EventHandler for Handler {
 
             let font_name = if msg.content.starts_with('!') {
                 "Monocraft"
-            } else if msg.content.starts_with('~') {
+            } else if msg.content.starts_with('`') {
                 "The Doctor"
             } else {
                 "Comic Sans MS"
@@ -120,14 +120,14 @@ impl EventHandler for Handler {
 
             let font_size = if msg.content.starts_with('!') {
                 32.0
-            } else if msg.content.starts_with('~') {
+            } else if msg.content.starts_with('`') {
                 64.0
             } else {
                 32.0
             };
             let line_height = if msg.content.starts_with('!') {
                 36.0
-            } else if msg.content.starts_with('~') {
+            } else if msg.content.starts_with('`') {
                 72.0
             } else {
                 36.0
